@@ -1,0 +1,16 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+hibernate:
+  packages-to-scan: com.modsen.eventstore.entity
+  hbm2ddl:
+    auto: none
+  dialect: org.hibernate.dialect.PostgreSQLDialect
+
+db:
+  driver-class-name: org.postgresql.Driver
+  url: jdbc:postgresql://localhost:5432/event_storage
+  username: postgres
+  password: postgres
