@@ -10,10 +10,13 @@ hibernate:
   dialect: org.hibernate.dialect.PostgreSQLDialect
 
 db:
-  driver-class-name: org.postgresql.Driver
-  url: jdbc:postgresql://localhost:5432/event_storage
-  username: postgres
-  password: postgres
+  url: ${TEST_DB_URL}
+  username: ${TEST_DB_USERNAME}
+  password: ${TEST_DB_PASSWORD}
+
+test-container:
+  image-version: postgres:11.1
+  data-base-name: test
 
 spring:
   liquibase:
