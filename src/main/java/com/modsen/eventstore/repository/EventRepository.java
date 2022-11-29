@@ -9,12 +9,12 @@ public interface EventRepository {
 
     Event save(Event event);
 
-    Optional<Event> read(Long id);
+    Optional<Event> findById(Long id);
 
     Event update(Event event);
 
     void delete(Long id);
 
-    List<Event> readAll();
+    List<Event> findAll();
 
 }

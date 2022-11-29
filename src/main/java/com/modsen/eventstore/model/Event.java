@@ -10,9 +10,9 @@ import java.time.LocalTime;
 @Table(name = "events")
 @Getter
 @Setter
+@Builder
 @ToString
 @EqualsAndHashCode
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class Event implements Cloneable{
@@ -38,19 +38,5 @@ public class Event implements Cloneable{
 
     @Column(name = "venue", nullable = false)
     private String venue;
-
-    @Override
-    public Event clone() {
-        Event event = null;
-        try {
-            event = (Event) super.clone();
-        } catch (CloneNotSupportedException e) {
-            event = new Event(
-                    this.getId(), this.getSubject(), this.getDescription(), this.getPlannerFullName(),
-                    this.getDate(), this.getTime(), this.getVenue()
-            );
-        }
-        return event;
-    }
 
 }

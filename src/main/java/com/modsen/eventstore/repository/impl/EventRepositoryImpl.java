@@ -37,7 +37,7 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     @Override
-    public Optional<Event> read(Long id) {
+    public Optional<Event> findById(Long id) {
         log.info(String.format("Try to find event entity with id = %d.", id));
 
         Assert.notNull(id, "The id to search for an entity cannot be null.");
@@ -63,7 +63,6 @@ public class EventRepositoryImpl implements EventRepository {
 
     @Override
     public void delete(Long id) {
-
         log.info(String.format("Try to delete event with id = %d.", id));
 
         Assert.notNull(id, "The id of the entity being deleted cannot be null.");
@@ -73,7 +72,7 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     @Override
-    public List<Event> readAll() {
+    public List<Event> findAll() {
 
         log.info("Try read all events.");
 

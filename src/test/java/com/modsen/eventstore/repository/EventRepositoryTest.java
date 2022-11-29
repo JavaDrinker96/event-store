@@ -3,12 +3,12 @@ package com.modsen.eventstore.repository;
 import com.modsen.eventstore.config.ContainersEnvironment;
 import com.modsen.eventstore.exception.NotExistEntityException;
 import com.modsen.eventstore.model.Event;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
+import com.modsen.eventstore.service.EventService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -25,35 +25,25 @@ class EventRepositoryTest extends ContainersEnvironment {
     @Autowired
     private EventRepository underTest;
 
-    private Event event;
-
-    @BeforeEach
-    void setUp() {
-        event = Event.builder()
-                .subject("Subject")
-                .description(null)
-                .date(LocalDate.of(2000, 1, 1))
-                .time(LocalTime.of(0, 0, 0))
-                .plannerFullName("Full Name")
-                .venue("Venue")
-                .build();
-    }
+    @Autowired
+    private EventService eventService;
 
     @Test
-    @DisplayName("Saving entity")
     void itShouldSaveEntity_WhenDataIsCorrect() {
+        //given
+        Event given = buildEvent();
+
         //when
-        underTest.save(event);
-        Optional<Event> result = underTest.read(event.getId());
+        Event result = underTest.save(given);
 
         //then
-        assertThat(event.getId()).isNotNull();
-        assertThat(result).isPresent()
-                .contains(event);
+        assertThat(result.getId()).isNotNull();
+        assertThat(result).usingRecursiveComparison()
+                .ignoringFields("id")
+                .isEqualTo(given);
     }
 
     @Test
-    @DisplayName("Saving null entity")
     void itShouldThrowException_WhenSaveNullEntity() {
         //when
         Throwable thrown = catchThrowable(() -> {
@@ -66,9 +56,9 @@ class EventRepositoryTest extends ContainersEnvironment {
     }
 
     @Test
-    @DisplayName("Saving entity with not null or not zero id")
-    void itShouldThrowException_WhenSaveEntityWithNotNullOrNotZeroId() {
+    void itShouldThrowException_WhenSavedEntityWithNotNullOrNotZeroId() {
         //given
+        Event event = buildEvent();
         event.setId(1L);
 
         //when
@@ -82,35 +72,34 @@ class EventRepositoryTest extends ContainersEnvironment {
     }
 
     @Test
-    @DisplayName("Reading entity by id")
     void itShouldRead_WhenEntityExists() {
         //given
-        underTest.save(event);
+        Event event = buildEvent();
+        Event given = underTest.save(event);
 
         //when
-        Optional<Event> result = underTest.read(event.getId());
+        Optional<Event> result = underTest.findById(given.getId());
 
         //then
         assertThat(result).isPresent()
-                .contains(event);
+                .contains(given);
     }
 
     @Test
-    @DisplayName("Reading a non-existent entity")
+    @Sql(scripts = "/scripts/deleteAllFromEventsTable.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void itShouldNotRead_WhenEntityDoesNotExist() {
         //when
-        Optional<Event> result = underTest.read(0L);
+        Optional<Event> result = underTest.findById(1L);
 
         //then
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("Reading entity with null id")
     void itShouldThrowException_WhenReadEntityIdIsNull() {
         //when
         Throwable thrown = catchThrowable(() -> {
-            underTest.read(null);
+            underTest.findById(null);
         });
 
         //then
@@ -119,24 +108,21 @@ class EventRepositoryTest extends ContainersEnvironment {
     }
 
     @Test
-    @DisplayName("Updating entity")
     void itShouldUpdate_WhenDataIsCorrect() {
         //given
-        underTest.save(event);
-        Event expected = event.clone();
+        Event saved = underTest.save(buildEvent());
+        Event expected = buildEvent();
+        expected.setId(saved.getId());
         expected.setSubject("New subject");
 
         //when
-        underTest.update(expected);
-        Optional<Event> result = underTest.read(event.getId());
+        Event result = underTest.update(expected);
 
         //then
-        assertThat(result).isPresent()
-                .contains(expected);
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
-    @DisplayName("Updating null entity")
     void itShouldThrowException_WhenEntityIsNull() {
         //when
         Throwable thrown = catchThrowable(() -> {
@@ -149,10 +135,9 @@ class EventRepositoryTest extends ContainersEnvironment {
     }
 
     @Test
-    @DisplayName("Updating entity with null id")
     void itShouldThrowException_WhenUpdatedEntityIdIsNull() {
         //given
-        event.setId(null);
+        Event event = buildEvent();
 
         //when
         Throwable thrown = catchThrowable(() -> {
@@ -165,11 +150,11 @@ class EventRepositoryTest extends ContainersEnvironment {
     }
 
     @Test
-    @DisplayName("Updating a non-existent entity")
+    @Sql(scripts = "/scripts/deleteAllFromEventsTable.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void itShouldThrowException_WhenUpdatedEntityDoesNotExist() {
         //given
-        underTest.save(event);
-        event.setId(event.getId() + 1L);
+        Event event = buildEvent();
+        event.setId(1L);
 
         //when
         Throwable thrown = catchThrowable(() -> {
@@ -181,27 +166,21 @@ class EventRepositoryTest extends ContainersEnvironment {
                 .hasMessageContaining("Entity of type Event with id = %d not exist in data base.", event.getId());
     }
 
-
     @Test
-    @DisplayName("Deleting entity by id")
     void itShouldDelete_WhenDataIsCorrect() {
         //given
-        underTest.save(event);
+        Event given = underTest.save(buildEvent());
 
         //when
-        underTest.delete(event.getId());
-        Optional<Event> result = underTest.read(event.getId());
-
-        //then
-        assertThat(result).isEmpty();
+        underTest.delete(given.getId());
     }
 
     @Test
-    @DisplayName("Deleting a non-existent entity by id")
+    @Sql(scripts = "/scripts/deleteAllFromEventsTable.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void itShouldThrowException_WhenDeletedEntityDoesNotExist() {
         //when
         Throwable thrown = catchThrowable(() -> {
-            underTest.delete(0L);
+            underTest.delete(1L);
         });
 
         //then
@@ -210,7 +189,6 @@ class EventRepositoryTest extends ContainersEnvironment {
     }
 
     @Test
-    @DisplayName("Deleting entity by null id")
     void itShouldThrowException_WhenDeletedEntityIdIsNull() {
         //when
         Throwable thrown = catchThrowable(() -> {
@@ -222,33 +200,39 @@ class EventRepositoryTest extends ContainersEnvironment {
     }
 
     @Test
-    @DisplayName("Reading all entities")
+    @Sql(scripts = "/scripts/deleteAllFromEventsTable.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void itShouldReadAllEntities_WhenTheyAreExist() {
         //given
-        Event expected1 = underTest.save(event.clone());
-        Event expected2 = underTest.save(event.clone());
+        Event expected1 = underTest.save(buildEvent());
+        Event expected2 = underTest.save(buildEvent());
 
         //when
-        List<Event> result = underTest.readAll();
+        List<Event> result = underTest.findAll();
 
         //then
-        assertThat(result).containsAll(List.of(expected1, expected2));
+        assertThat(result).hasSize(2)
+                .containsAll(List.of(expected1, expected2));
     }
 
     @Test
-    @DisplayName("Reading non-existent entities")
+    @Sql(scripts = "/scripts/deleteAllFromEventsTable.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void itShouldNotReadEntities_WhenTheyAreNotExist() {
-        //given
-        List<Event> allEntities = underTest.readAll();
-        allEntities.stream()
-                .mapToLong(Event::getId)
-                .forEach(id -> underTest.delete(id));
-
         //when
-        List<Event> result = underTest.readAll();
+        List<Event> result = underTest.findAll();
 
         //then
         assertThat(result).isEmpty();
+    }
+
+    private Event buildEvent(){
+        return Event.builder()
+                .subject("Subject")
+                .description("Description")
+                .date(LocalDate.of(2000, 1, 1))
+                .time(LocalTime.of(0, 0, 0))
+                .plannerFullName("Full Name")
+                .venue("Venue")
+                .build();
     }
 
 }
