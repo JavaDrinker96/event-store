@@ -1,5 +1,6 @@
 package com.modsen.eventstore.repository;
 
+import com.modsen.eventstore.dto.criteria.event.EventCriteria;
 import com.modsen.eventstore.model.Event;
 
 import java.util.List;
@@ -16,5 +17,7 @@ public interface EventRepository {
     void delete(Long id);
 
     List<Event> findAll();
+
+    List<Event> findAll(EventCriteria criteria);
 
 }

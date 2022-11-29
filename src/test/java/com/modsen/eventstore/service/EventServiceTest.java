@@ -1,9 +1,13 @@
 package com.modsen.eventstore.service;
 
-import com.modsen.eventstore.dto.EventDto;
-import com.modsen.eventstore.dto.EventWithIdDto;
+import com.modsen.eventstore.dto.criteria.PaginationCriteria;
+import com.modsen.eventstore.dto.criteria.SortingDirection;
+import com.modsen.eventstore.dto.criteria.event.EventCriteria;
+import com.modsen.eventstore.dto.criteria.event.EventCriteriaField;
+import com.modsen.eventstore.dto.criteria.event.EventFilterCriteria;
+import com.modsen.eventstore.dto.criteria.event.EventSortingCriteria;
+import com.modsen.eventstore.dto.event.EventResponse;
 import com.modsen.eventstore.exception.NotExistEntityException;
-import com.modsen.eventstore.mapper.EventMapper;
 import com.modsen.eventstore.model.Event;
 import com.modsen.eventstore.repository.EventRepository;
 import com.modsen.eventstore.service.impl.EventServiceImpl;
@@ -14,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -27,34 +30,28 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
 
     @Mock
     private EventRepository eventRepository;
 
-    @Mock
-    private EventMapper eventMapper;
-
     private EventService underTest;
     private AutoCloseable autoCloseable;
 
-    private final Long id = 1L;
-    private final String subject = "Subject";
-    private final String description = "Description";
-    private final String plannerFullName = "Full Name";
-    private final String stringDate = "01.01.2000";
-    private final LocalDate date = LocalDate.of(2000, 1, 1);
-    private final String stringTime = "00:00";
-    private final LocalTime time = LocalTime.of(0, 0, 0);
-    private final String venue = "Venue";
+    private static final Long id = 1L;
+    private static final String subject = "Subject";
+    private static final String description = "Description";
+    private static final String plannerFullName = "Full Name";
+    private static final LocalDate date = LocalDate.of(2000, 1, 1);
+    private static final LocalTime time = LocalTime.of(0, 0, 0);
+    private static final String venue = "Venue";
 
 
     @BeforeEach
     void setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this);
-        underTest = new EventServiceImpl(eventMapper, eventRepository);
+        underTest = new EventServiceImpl(eventRepository);
     }
 
     @AfterEach
@@ -65,23 +62,18 @@ class EventServiceTest {
     @Test
     void itShouldSaveEvent_WhenDataIsCorrect() {
         //given
-        EventDto dto = buildEventDto();
-        Event event = buildEvent(true);
-        Event eventWithoutId = buildEvent(false);
-        EventWithIdDto expected = buildEventWithIdDto();
+        LocalDate date = LocalDate.now();
+        Event eventWithoutId = new Event(null, subject, description, plannerFullName, date, time, venue);
+        Event expected = new Event(id, subject, description, plannerFullName, date, time, venue);
 
-        when(eventMapper.dtoToEntity(dto)).thenReturn(eventWithoutId);
-        when(eventRepository.save(eventWithoutId)).thenReturn(event);
-        when(eventMapper.entityToWithIdDto(event)).thenReturn(expected);
+        when(eventRepository.save(eventWithoutId)).thenReturn(expected);
 
         //when
-        EventWithIdDto result = underTest.create(dto);
+        Event result = underTest.create(eventWithoutId);
 
         //then
-        assertThat(result).isEqualTo(expected);
         verify(eventRepository).save(eventWithoutId);
-        verify(eventMapper).dtoToEntity(dto);
-        verify(eventMapper).entityToWithIdDto(event);
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
@@ -91,12 +83,11 @@ class EventServiceTest {
 
         //then
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("The dto for saving event entity cannot be null.");
+                .hasMessageContaining("The entity being saved cannot be null.");
     }
 
     @Test
     void itShouldThrowException_WhenReadingIdIsNull() {
-
         //when
         Throwable thrown = catchThrowable(() -> underTest.read(null));
 
@@ -108,20 +99,17 @@ class EventServiceTest {
     @Test
     void itShouldReadEvent_WhenDataIsCorrect() {
         //given
-        Optional<Event> optionalEvent = Optional.of(buildEvent(true));
-        Long id = optionalEvent.get().getId();
-        EventWithIdDto expected = buildEventWithIdDto();
+        Optional<Event> optionalEvent = Optional.of(createEvent(id));
+        Event expected = createEvent(id);
 
         when(eventRepository.findById(id)).thenReturn(optionalEvent);
-        when(eventMapper.entityToWithIdDto(optionalEvent.get())).thenReturn(expected);
 
         //when
-        EventWithIdDto result = underTest.read(id);
+        Event result = underTest.read(id);
 
         //then
-        assertThat(result).isEqualTo(expected);
         verify(eventRepository).findById(id);
-        verify(eventMapper).entityToWithIdDto(optionalEvent.get());
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
@@ -133,29 +121,24 @@ class EventServiceTest {
         Throwable thrown = catchThrowable(() -> underTest.read(id));
 
         //then
-        assertThat(thrown).isInstanceOf(NotExistEntityException.class)
-                .hasMessageContaining(String.format("Event entity with id = %d not exist in data base.", id));
         verify(eventRepository).findById(id);
+        assertThat(thrown).isInstanceOf(NotExistEntityException.class)
+                .hasMessageContaining(String.format("Event entity with id = %d does not exist in the data base.", id));
     }
 
     @Test
     void itShouldUpdateEvent_WhenDataIsCorrect() {
         //given
-        EventWithIdDto expected = buildEventWithIdDto();
-        Event event = buildEvent(true);
+        Event expected = createEvent(id);
 
-        when(eventMapper.withIdDtoToEntity(expected)).thenReturn(event);
-        when(eventRepository.update(event)).thenReturn(event);
-        when(eventMapper.entityToWithIdDto(event)).thenReturn(expected);
+        when(eventRepository.update(expected)).thenReturn(expected);
 
         //when
-        EventWithIdDto result = underTest.update(expected);
+        Event result = underTest.update(expected);
 
         //then
+        verify(eventRepository).update(expected);
         assertThat(result).isEqualTo(expected);
-        verify(eventMapper).withIdDtoToEntity(expected);
-        verify(eventRepository).update(event);
-        verify(eventMapper).entityToWithIdDto(event);
     }
 
     @Test
@@ -165,7 +148,7 @@ class EventServiceTest {
 
         //then
         assertThat(thrown).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("The dto for updating event entity can't be null.");
+                .hasMessageContaining("The entity being updated cannot be null.");
     }
 
     @Test
@@ -190,74 +173,75 @@ class EventServiceTest {
     @Test
     void itShouldReadAllEvents_WhenTheyAreExisting() {
         //given
-        Event event1 = buildEvent(false);
-        event1.setId(1L);
-        Event event2 = buildEvent(false);
-        event1.setId(2L);
-        List<Event> eventList = new ArrayList<>(List.of(event1, event2));
+        Event event1 = createEvent(1L);
+        Event event2 = createEvent(2L);
+        List<Event> expected = new ArrayList<>(List.of(event1, event2));
 
-        EventWithIdDto dto1 = buildEventWithIdDto();
-        dto1.setId(1L);
-        EventWithIdDto dto2 = buildEventWithIdDto();
-        dto2.setId(2L);
-        List<EventWithIdDto> expected = new ArrayList<>(List.of(dto1, dto2));
-
-        when(eventRepository.findAll()).thenReturn(eventList);
-        when(eventMapper.entityListToWithIdDtoList(eventList)).thenReturn(expected);
+        when(eventRepository.findAll()).thenReturn(expected);
 
         //when
-        List<EventWithIdDto> result = underTest.readAll();
+        List<Event> result = underTest.readAll();
 
         //then
+        verify(eventRepository).findAll();
         assertThat(result).hasSize(2)
                 .containsAll(expected);
     }
 
     @Test
-    void itShouldNotReadEvents_WhenTheyAreNotExisting(){
+    void itShouldNotReadEvents_WhenTheyAreNotExisting() {
         //given
         List<Event> eventList = new ArrayList<>();
-        List<EventWithIdDto> expected = new ArrayList<>();
+        List<EventResponse> expected = new ArrayList<>();
 
         when(eventRepository.findAll()).thenReturn(eventList);
-        when(eventMapper.entityListToWithIdDtoList(eventList)).thenReturn(expected);
 
         //when
-        List<EventWithIdDto> result = underTest.readAll();
+        List<Event> result = underTest.readAll();
 
         //then
+        verify(eventRepository).findAll();
         assertThat(result).isEmpty();
     }
 
-    private EventWithIdDto buildEventWithIdDto() {
-        EventDto data = buildEventDto();
-        return EventWithIdDto.builder()
-                .id(id)
-                .data(data)
-                .build();
+    @Test
+    void itShouldThrowException_WhenTryReadEventsWithNullCriteria() {
+        //when
+        Throwable thrown = catchThrowable(() -> underTest.readAll(null));
+
+        //then
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("The criteria for finding values can't be null");
     }
 
-    private EventDto buildEventDto() {
-        return EventDto.builder()
-                .subject(subject)
-                .description(description)
-                .plannerFullName(plannerFullName)
-                .date(stringDate)
-                .time(stringTime)
-                .venue(venue)
+    @Test
+    void itShouldReadAllEventsByCriteria_WhenDataIsCorrect() {
+        //given
+        Event event1 = new Event(1L, "Subject1", description, plannerFullName, date, time, venue);
+        Event event2 = new Event(2L, "Subject2", description, plannerFullName, date, time, venue);
+        List<Event> expected = List.of(event1, event2);
+
+        EventFilterCriteria filterCriteria = new EventFilterCriteria(EventCriteriaField.SUBJECT, subject);
+        EventSortingCriteria sortingCriteria = new EventSortingCriteria(EventCriteriaField.SUBJECT, SortingDirection.ASC);
+        EventCriteria criteria = EventCriteria.builder()
+                .filter(List.of(filterCriteria))
+                .sort(List.of(sortingCriteria))
+                .pagination(new PaginationCriteria(1, 1))
                 .build();
+
+        when(eventRepository.findAll(criteria)).thenReturn(expected);
+
+        //when
+        List<Event> result = underTest.readAll(criteria);
+
+        //then
+        verify(eventRepository).findAll(criteria);
+        assertThat(result).hasSize(2)
+                .containsExactly(event1, event2);
     }
 
-    private Event buildEvent(boolean withId) {
-        return Event.builder()
-                .id(withId ? id : null)
-                .subject(subject)
-                .description(description)
-                .date(date)
-                .time(time)
-                .plannerFullName(plannerFullName)
-                .venue(venue)
-                .build();
+    private Event createEvent(Long id) {
+        return new Event(id, subject, description, plannerFullName, date, time, venue);
     }
 
 }

@@ -1,80 +1,73 @@
 package com.modsen.eventstore.service.impl;
 
-import com.modsen.eventstore.dto.EventDto;
-import com.modsen.eventstore.dto.EventWithIdDto;
+import com.modsen.eventstore.dto.criteria.event.EventCriteria;
+import com.modsen.eventstore.exception.BeforeTodayDateException;
 import com.modsen.eventstore.exception.NotExistEntityException;
-import com.modsen.eventstore.mapper.EventMapper;
 import com.modsen.eventstore.model.Event;
 import com.modsen.eventstore.repository.EventRepository;
 import com.modsen.eventstore.service.EventService;
-import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.validation.annotation.Validated;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 @Service
-@Validated
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
 
-    private final EventMapper eventMapper;
     private final EventRepository eventRepository;
 
 
     @Override
-    public EventWithIdDto create(@Valid EventDto dto) {
-        log.info(String.format("Try to save event entity in data base by dto %s.", Objects.isNull(dto) ? null : dto.toString()));
+    public Event create(Event event) {
+        log.info("Try to save entity {} into data base.", event);
+        Assert.notNull(event, "The entity being saved cannot be null.");
 
-        Assert.notNull(dto, "The dto for saving event entity cannot be null.");
+        if (event.getDate().isBefore(LocalDate.now())) {
+            throw new BeforeTodayDateException("The date must be present or future.");
+        }
 
-        Event event = eventMapper.dtoToEntity(dto);
-        return eventMapper.entityToWithIdDto(eventRepository.save(event));
+        return eventRepository.save(event);
     }
 
     @Override
-    public EventWithIdDto read(Long id) {
-        log.info(String.format("Try to find event entity with id = %d.", id));
-
+    public Event read(Long id) {
+        log.info("Try to find event entity with id = {}.", id);
         Assert.notNull(id, "Id to search for the entity event cannot be null.");
-
-        Event event = eventRepository.findById(id).orElseThrow(() ->
-                new NotExistEntityException(
-                        String.format("Event entity with id = %d not exist in data base.", id)
-                ));
-
-        return eventMapper.entityToWithIdDto(event);
+        return eventRepository.findById(id).orElseThrow(
+                () -> new NotExistEntityException(String.format("Event entity with id = %d does not exist in the data base.", id))
+        );
     }
 
     @Override
-    public EventWithIdDto update(@Valid EventWithIdDto dto) {
-        log.info(String.format("Try to update event entity in data base by dto %s.", Objects.isNull(dto) ? null : dto.toString()));
-
-        Assert.notNull(dto, "The dto for updating event entity can't be null.");
-
-        Event event = eventMapper.withIdDtoToEntity(dto);
-        return eventMapper.entityToWithIdDto(eventRepository.update(event));
+    public Event update(Event event) {
+        log.info("Try to update the entity {}.", event);
+        Assert.notNull(event, "The entity being updated cannot be null.");
+        return eventRepository.update(event);
     }
 
     @Override
     public void delete(Long id) {
-        log.info(String.format("Try to delete event with id = %d.", id));
-
+        log.info("Try to delete event with id = {}.", id);
         Assert.notNull(id, "The event entity being deleted can't have a null id.");
-
         eventRepository.delete(id);
     }
 
     @Override
-    public List<EventWithIdDto> readAll() {
+    public List<Event> readAll() {
         log.info("Try to read all events.");
-        List<Event> eventList = eventRepository.findAll();
-        return eventMapper.entityListToWithIdDtoList(eventList);
+        return eventRepository.findAll();
+    }
+
+    @Override
+    public List<Event> readAll(EventCriteria criteria) {
+        log.info("Try to read all events by criteria {}.", criteria);
+        Assert.notNull(criteria, "The criteria for finding values can't be null.");
+        return eventRepository.findAll(criteria);
     }
 
 }

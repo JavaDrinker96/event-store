@@ -1,7 +1,7 @@
 package com.modsen.eventstore.mapper;
 
-import com.modsen.eventstore.dto.EventDto;
-import com.modsen.eventstore.dto.EventWithIdDto;
+import com.modsen.eventstore.dto.event.EventRequest;
+import com.modsen.eventstore.dto.event.EventResponse;
 import com.modsen.eventstore.model.Event;
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
@@ -22,42 +22,30 @@ public interface EventMapper {
 
     @Mapping(target = "date", source = "date", dateFormat = DATE_FORMAT)
     @Mapping(target = "time", source = "time", qualifiedByName = "stringToTime")
-    Event dtoToEntity(EventDto dto);
+    Event requestDtoToEntity(EventRequest dto);
 
-    @Mapping(target = "subject", source = "data.subject")
-    @Mapping(target = "description", source = "data.description")
-    @Mapping(target = "plannerFullName", source = "data.plannerFullName")
-    @Mapping(target = "date", source = "data.date", dateFormat = DATE_FORMAT)
-    @Mapping(target = "time", source = "data.time", qualifiedByName = "stringToTime")
-    @Mapping(target = "venue", source = "data.venue")
-    Event withIdDtoToEntity(EventWithIdDto dto);
+    @Mapping(target = "date", source = "date", dateFormat = DATE_FORMAT)
+    @Mapping(target = "time", source = "time", qualifiedByName = "stringToTime")
+    Event responseDtoToEntity(EventResponse dto);
 
-    @Mapping(target = "data.subject", source = "subject")
-    @Mapping(target = "data.description", source = "description")
-    @Mapping(target = "data.plannerFullName", source = "plannerFullName")
-    @Mapping(target = "data.date", source = "date", dateFormat = DATE_FORMAT)
-    @Mapping(target = "data.time", source = "time", qualifiedByName = "timeToString")
-    @Mapping(target = "data.venue", source = "venue")
+    @Mapping(target = "date", source = "date", dateFormat = DATE_FORMAT)
+    @Mapping(target = "time", source = "time", qualifiedByName = "timeToString")
     @Named("entityToWithIdDto")
-    EventWithIdDto entityToWithIdDto(Event entity);
+    EventResponse entityToResponseDto(Event entity);
 
     @IterableMapping(qualifiedByName = "entityToWithIdDto")
-    List<EventWithIdDto> entityListToWithIdDtoList(List<Event> entity);
+    List<EventResponse> entityListToResponseDtoList(List<Event> entity);
 
     @Named("timeToString")
     default String timeToString(LocalTime time) {
-        if (Objects.isNull(time)) {
-            return null;
-        }
-        return time.format(DateTimeFormatter.ofPattern(TIME_FORMAT));
+        return Objects.nonNull(time) ? time.format(DateTimeFormatter.ofPattern(TIME_FORMAT)) : null;
     }
 
     @Named("stringToTime")
     default LocalTime stringToTime(String string) {
-        if (Objects.isNull(string) || !string.matches(TIME_REGEX_PATTERN)) {
-            return null;
-        }
-        return LocalTime.parse(string, DateTimeFormatter.ofPattern(TIME_FORMAT));
+        return (!Objects.isNull(string) && string.matches(TIME_REGEX_PATTERN))
+                ? LocalTime.parse(string, DateTimeFormatter.ofPattern(TIME_FORMAT))
+                : null;
     }
 
 }

@@ -16,35 +16,32 @@ import java.util.Properties;
 @EnableTransactionManagement
 public class HibernateConfig {
 
-    @Value("${hibernate.packages-to-scan}")
-    private String packagesToScan;
-
     @Value("${hibernate.hbm2ddl.auto}")
     private String hbm2ddl;
 
     @Value("${hibernate.dialect}")
     private String hibernateDialect;
 
-    @Value("${db.driver-class-name}")
+    @Value("${postgres.driver-class-name}")
     private String driverClassName;
 
-    @Value("${db.url}")
+    @Value("${postgres.url}")
     private String dbUrl;
 
-    @Value("${db.username}")
+    @Value("${postgres.username}")
     private String dbUsername;
 
-    @Value("${db.password}")
+    @Value("${postgres.password}")
     private String dbPassword;
 
 
     @Bean
     public LocalSessionFactoryBean sessionFactory() {
+        final String packagesToScan = "com.modsen.eventstore.model";
         LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
         sessionFactory.setDataSource(dataSource());
         sessionFactory.setPackagesToScan(packagesToScan);
         sessionFactory.setHibernateProperties(hibernateProperties());
-
         return sessionFactory;
     }
 
@@ -55,24 +52,20 @@ public class HibernateConfig {
         dataSource.setUrl(dbUrl);
         dataSource.setUsername(dbUsername);
         dataSource.setPassword(dbPassword);
-
         return dataSource;
     }
 
     @Bean
     public PlatformTransactionManager hibernateTransactionManager() {
-        HibernateTransactionManager transactionManager
-                = new HibernateTransactionManager();
+        HibernateTransactionManager transactionManager = new HibernateTransactionManager();
         transactionManager.setSessionFactory(sessionFactory().getObject());
         return transactionManager;
     }
 
     private Properties hibernateProperties() {
         Properties hibernateProperties = new Properties();
-        hibernateProperties.setProperty(
-                "hibernate.hbm2ddl.auto", hbm2ddl);
-        hibernateProperties.setProperty(
-                "hibernate.dialect", hibernateDialect);
+        hibernateProperties.setProperty("hibernate.hbm2ddl.auto", hbm2ddl);
+        hibernateProperties.setProperty("hibernate.dialect", hibernateDialect);
         return hibernateProperties;
     }
 

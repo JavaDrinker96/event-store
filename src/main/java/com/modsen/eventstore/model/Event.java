@@ -1,21 +1,18 @@
 package com.modsen.eventstore.model;
 
-import jakarta.persistence.*;
 import lombok.*;
 
+import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
 @Table(name = "events")
-@Getter
-@Setter
+@Data
 @Builder
-@ToString
-@EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
-public class Event implements Cloneable{
+public class Event {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

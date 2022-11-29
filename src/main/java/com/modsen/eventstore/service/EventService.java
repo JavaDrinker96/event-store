@@ -1,20 +1,22 @@
 package com.modsen.eventstore.service;
 
-import com.modsen.eventstore.dto.EventDto;
-import com.modsen.eventstore.dto.EventWithIdDto;
+import com.modsen.eventstore.dto.criteria.event.EventCriteria;
+import com.modsen.eventstore.model.Event;
 
 import java.util.List;
 
 public interface EventService {
 
-    EventWithIdDto create(EventDto dto);
+    Event create(Event event);
 
-    EventWithIdDto read(Long id);
+    Event read(Long id);
 
-    EventWithIdDto update(EventWithIdDto dto);
+    Event update(Event event);
 
     void delete(Long id);
 
-    List<EventWithIdDto> readAll();
+    List<Event> readAll();
+
+    List<Event> readAll(EventCriteria criteria);
 
 }

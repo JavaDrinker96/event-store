@@ -4,7 +4,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 public class PostgresTestContainer extends PostgreSQLContainer<PostgresTestContainer> {
 
-    public static final String IMAGE_VERSION = "postgres:11.1";
+    public static final String IMAGE_VERSION = "postgres:14";
     public static final String DATABASE_NAME = "test";
     public static PostgreSQLContainer container;
 
@@ -14,7 +14,8 @@ public class PostgresTestContainer extends PostgreSQLContainer<PostgresTestConta
 
     public static PostgreSQLContainer getInstance() {
         if (container == null) {
-            container = new PostgresTestContainer().withDatabaseName(DATABASE_NAME);
+            container = new PostgresTestContainer()
+                    .withDatabaseName(DATABASE_NAME);
         }
         return container;
     }

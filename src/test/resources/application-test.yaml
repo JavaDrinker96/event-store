@@ -1,22 +1,12 @@
-server:
-  port: 8080
-  servlet:
-    context-path: /api
-
 hibernate:
-  packages-to-scan: com.modsen.eventstore.model
   hbm2ddl:
-    auto: validate
+    auto: none
   dialect: org.hibernate.dialect.PostgreSQLDialect
 
-db:
+postgres:
   url: ${TEST_DB_URL}
   username: ${TEST_DB_USERNAME}
   password: ${TEST_DB_PASSWORD}
-
-test-container:
-  image-version: postgres:11.1
-  data-base-name: test
 
 spring:
   liquibase:

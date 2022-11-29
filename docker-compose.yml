@@ -1,0 +1,36 @@
+version: "3.9"
+
+networks:
+  event-store-network:
+
+services:
+
+  event-store-api:
+    container_name: event-store-api
+    restart: always
+    build:
+      context: .
+    ports:
+      - ${API_SERVICE_PORT}:8080
+    environment:
+      SPRING_DATABASE_URL: jdbc:postgresql://event-store-db:5432/${POSTGRES_DATABASE_NAME}
+      SPRING_DATABASE_PASSWORD: ${POSTGRES_DATABASE_PASSWORD}
+      SPRING_DATABASE_USERNAME: ${POSTGRES_DATABASE_USERNAME}
+    depends_on:
+      - postgresql_db
+    networks:
+      - event-store-network
+
+  postgresql_db:
+    container_name: event-store-db
+    image: "postgres:14"
+    ports:
+      - ${POSTGRES_DATABASE_PORT}:5432
+    volumes:
+      - ./db-data/:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: ${POSTGRES_DATABASE_NAME}
+      POSTGRES_USER: ${POSTGRES_DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_DATABASE_PASSWORD}
+    networks:
+      - event-store-network
