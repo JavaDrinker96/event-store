@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: db.changelog-create-event-table.yaml
+      relativeToChangelogFile: true

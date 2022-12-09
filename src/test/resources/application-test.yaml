@@ -1,0 +1,13 @@
+hibernate:
+  hbm2ddl:
+    auto: none
+  dialect: org.hibernate.dialect.PostgreSQLDialect
+
+postgres:
+  url: ${TEST_DB_URL}
+  username: ${TEST_DB_USERNAME}
+  password: ${TEST_DB_PASSWORD}
+
+spring:
+  liquibase:
+    enabled: true
