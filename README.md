@@ -33,7 +33,7 @@ Follow [this link](https://docs.docker.com/get-docker/) to install docker and [t
    ```
    > git clone https://github.com/JavaDrinker96/event-store.git
    ```
-2. Go to the project folder and configure .env folder for your needs 
+2. Go to the project folder and configure .env file for your needs 
    - `API_SERVICE_PORT` - the port from which the api will be available on your local machine
    - `POSTGRES_DATABASE_PORT` - the port from which the database will be accessible on your local machine
    - `POSTGRES_DATABASE_NAME` - postgres database name
